@@ -4,7 +4,7 @@ Then
 1) Store every calibrated MS downloaded from NAS in one folder
 2) Set imagename, phase_center, central V and deltaV, and imsize for cleaning in the autoselfcal_par.txt file and save it in the same folder with the MS files
 3) From the folder, run the script with:
-casa -c ~/bin/casa/auto_selfcal/bin/ma_script.py
+casa -c [path to auto_selfcal]/auto_selfcal/bin/ma_script.py
 
 SCRIPT STEPS:
 1) Split observations in targets
