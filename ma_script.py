@@ -157,19 +157,18 @@ min_chan,max_chan=psf_per_channel(img_name+'_dirty.psf')
 
 
 # Estimate noise
-chanstat=imstat(imagename=img_name+'_dirty.image',chans=str(min_chan)+'~'+str(min_chan+4))
+chanstat=imstat(imagename=img_name+'_dirty.image',chans=str(min_chan)+'~'+str(min_chan+10))
 rms1= chanstat['rms'][0]
-chanstat=imstat(imagename=img_name+'_dirty.image',chans=str(max_chan-5)+'~'+str(max_chan-1))
+chanstat=imstat(imagename=img_name+'_dirty.image',chans=str(max_chan-11)+'~'+str(max_chan-1))
 rms2= chanstat['rms'][0]
 rms=0.5*(rms1+rms2)*1e3
 print('GOAL RMS: ',rms,min_chan,max_chan)
 
 #### Deep cleaning
 
-tclean(vis=img_list,selectdata=True,field='',spw='1',timerange='',uvrange='',antenna='',scan='',observation='',intent='',datacolumn='data',imagename=img_name,imsize=imsz,cell='0.15arcsec',start=min_chan,nchan=int(max_chan-min_chan),phasecenter=phase_c,stokes='I',projection='SIN',startmodel='',specmode='cube',reffreq='',outframe='',veltype='radio',restfreq='230.538GHz',interpolation='linear',perchanweightdensity=True,gridder='mosaic',facets=1,psfphasecenter='',wprojplanes=1,vptable='',mosweight=True,aterm=True,psterm=False,wbawp=True,conjbeams=False,cfcache='',usepointing=False,computepastep=360.0,rotatepastep=360.0,pointingoffsetsigdev=[],pblimit=0.2,normtype='flatnoise',deconvolver='multiscale',scales=[0, 6, 12],nterms=2,smallscalebias=0.0,fusedthreshold=0.0,largestscale=-1,restoration=True,restoringbeam='common',pbcor=False,outlierfile='',weighting='briggs',robust=0.5,npixels=0,uvtaper=[],niter=500000,gain=0.1,threshold=str(rms)+'mJy/beam',nsigma=0.0,cycleniter=100,cyclefactor=3.0,minpsffraction=0.05,maxpsffraction=0.8,interactive=False,nmajor=-1,fullsummary=False,usemask='auto-multithresh',mask='',pbmask=0.2,sidelobethreshold=2.0,noisethreshold=4.25,lownoisethreshold=1.5,negativethreshold=0.0,smoothfactor=1.0,minbeamfrac=0.3,cutthreshold=0.01,growiterations=75,dogrowprune=True,minpercentchange=-1.0,verbose=False,fastnoise=True,restart=True,savemodel='none',calcres=True,calcpsf=True,psfcutoff=0.35,parallel=True )
+tclean(vis=img_list,selectdata=True,field='',spw='1',timerange='',uvrange='',antenna='',scan='',observation='',intent='',datacolumn='data',imagename=img_name,imsize=imsz,cell='0.15arcsec',start=min_chan,nchan=int(max_chan-min_chan),phasecenter=phase_c,stokes='I',projection='SIN',startmodel='',specmode='cube',reffreq='',outframe='',veltype='radio',restfreq='230.538GHz',interpolation='linear',perchanweightdensity=True,gridder='mosaic',facets=1,psfphasecenter='',wprojplanes=1,vptable='',mosweight=True,aterm=True,psterm=False,wbawp=True,conjbeams=False,cfcache='',usepointing=False,computepastep=360.0,rotatepastep=360.0,pointingoffsetsigdev=[],pblimit=0.2,normtype='flatnoise',deconvolver='multiscale',scales=[0, 6, 12],nterms=2,smallscalebias=0.0,fusedthreshold=0.0,largestscale=-1,restoration=True,restoringbeam='common',pbcor=False,outlierfile='',weighting='briggs',robust=0.5,npixels=0,uvtaper=[],niter=100000,gain=0.1,threshold=str(round(rms,3))+'mJy/beam',nsigma=0.0,cycleniter=100,cyclefactor=3.0,minpsffraction=0.05,maxpsffraction=0.8,interactive=False,nmajor=-1,fullsummary=False,usemask='auto-multithresh',mask='',pbmask=0.2,sidelobethreshold=2.0,noisethreshold=4.25,lownoisethreshold=1.5,negativethreshold=0.0,smoothfactor=1.0,minbeamfrac=0.3,cutthreshold=0.01,growiterations=75,dogrowprune=True,minpercentchange=-1.0,verbose=False,fastnoise=True,restart=True,savemodel='none',calcres=True,calcpsf=True,psfcutoff=0.35,parallel=True )
 #Primary beam correction
-#imcontsub(imagename=img_name+'.image/',linefile=img_name+'_line.image/',contfile=img_name+'_cont.image/',fitorder=0)
-impbcor( imagename=img_name+'.image/',pbimage=img_name+'.pb/',outfile=img_name+'_pbcorr.image/',overwrite=False,box='',region='',chans='',stokes='I',mask='',mode='divide',cutoff=-1.0,stretch=False )
+impbcor(imagename=img_name+'.image/',pbimage=img_name+'.pb/',outfile=img_name+'_pbcorr.image/',overwrite=False,box='',region='',chans='',stokes='I',mask='',mode='divide',cutoff=-1.0,stretch=False )
 #Export
 exportfits(imagename=img_name+'_pbcorr.image/',fitsimage=img_name+'_pbcorr.fits',velocity=True)
 exportfits(imagename=img_name+'.pb/',fitsimage=img_name+'_pb.fits',velocity=True)
