@@ -18,6 +18,33 @@ try:
 except:
    parallel=False
 
+
+
+def psf_per_channel(cube_path):
+
+    ia.open(cube_path)
+
+    header = ia.summary()
+    ia.close()
+    chan_list=[]
+    if 'perplanebeams' in header:
+        beams_data = header['perplanebeams']['beams']
+
+
+        for chan_idx in beams_data.keys():
+            chan_num = int(chan_idx.replace('*', ''))
+
+            beam = beams_data[chan_idx]['*0']
+
+            major = beam['major']['value']
+            minor = beam['minor']['value']
+            if major<2. and minor<2. and major>0. and minor>0.:
+                chan_list.append(chan_num)
+            #print(f"{chan_num:<10}{major:<15.4f}{minor:<15.4f}{pa:<10.2f}")
+        return min(chan_list),max(chan_list)
+
+
+
 with open('autoselfcal_par.txt') as f:
     lines = [line.rstrip('\n') for line in f if not line.startswith('#')]
 
@@ -47,9 +74,9 @@ for fname in glob.glob('./*'): # change directory as needed
         file=fname.replace('./','')
         self_list.append(file)
 
-
+#self_list=[]
 # AUTO-SELFCAL per MS: split into targets -> split into line -> autoselfcal
-
+"""
 for file in self_list:
 
     split_calibrated_final(file, overwrite=True)
@@ -76,7 +103,7 @@ for file in self_list:
     concat([targets.replace('_targets.ms','_targets_pre.ms'),targets.replace('_targets.ms','_targets_mid.ms'),targets.replace('_targets.ms','_targets_post.ms')],concatvis=targets.replace('_targets.ms','_targets_vel.ms'))
 
 
-    auto_selfcal(targets.replace('_targets.ms','_targets_vel.ms'), parallel=parallel,spectral_average=False,optimize_spw_combine=True,minsnr_to_proceed=3.0,gaincal_minsnr=3.0,allow_gain_interpolation=True,guess_scan_combine=True,allow_cocal=False,delta_beam_thresh=10,apply_to_target_ms=False,check_all_spws=False,apply_cal_mode_default='calflag',inf_EB_gaintype='T',inf_EB_gaincal_combine='scan',dividing_factor=3,do_amp_selfcal=False)
+    auto_selfcal(targets.replace('_targets.ms','_targets_vel.ms'), parallel=parallel,spectral_average=False,optimize_spw_combine=True,minsnr_to_proceed=3.0,gaincal_minsnr=3.0,allow_gain_interpolation=True,guess_scan_combine=True,allow_cocal=False,delta_beam_thresh=10,apply_to_target_ms=False,check_all_spws=False,apply_cal_mode_default='calflag',inf_EB_gaintype='T',inf_EB_gaincal_combine='scan',dividing_factor=5,do_amp_selfcal=False)
     os.system('rm -r *.tt0')
     os.system('rm -r *.mask')
     os.system('rm -r '+targets.replace('_targets.ms','_targets_pre.ms'))
@@ -85,7 +112,7 @@ for file in self_list:
 
     os.system('mv weblog weblog_'+file.replace('.ms',''))
 
-
+"""
 # Continuum subtraction
 
 uvc_list=[]
@@ -96,8 +123,8 @@ for fname in glob.glob('./*'): # change directory as needed
 print(uvc_list)
 
 for vis in uvc_list:
-    #uvcontsub(vis=vis,spw='',fitspec='0,2',fitorder=0,outputvis=vis.replace('.ms','_line.ms'),datacolumn='data') #CHECK SPW!!!
-    uvcontsub(vis=vis,spw='',fitspec='0,2',fitorder=1,outputvis=vis.replace('.ms','_line.ms'),datacolumn='data') #CHECK SPW!!!
+    os.system('rm -r '+vis.replace('.ms','_line.ms'))
+    uvcontsub(vis=vis,spw='',fitspec='0,2',fitorder=1,outputvis=vis.replace('.ms','_line.ms'),datacolumn='corrected') #CHECK SPW!!!
 
 
 ##imaging
@@ -126,30 +153,8 @@ for im in img_list:
 
 
 ### Dirty image to compute goal noise
-def psf_per_channel(cube_path):
 
-    ia.open(cube_path)
-
-    header = ia.summary()
-    ia.close()
-    chan_list=[]
-    if 'perplanebeams' in header:
-        beams_data = header['perplanebeams']['beams']
-
-
-        for chan_idx in beams_data.keys():
-            chan_num = int(chan_idx.replace('*', ''))
-
-            beam = beams_data[chan_idx]['*0']
-
-            major = beam['major']['value']
-            minor = beam['minor']['value']
-            if major<2. and minor<2.:
-                chan_list.append(chan_num)
-            #print(f"{chan_num:<10}{major:<15.4f}{minor:<15.4f}{pa:<10.2f}")
-        return min(chan_list),max(chan_list)
-
-tclean(vis=img_list,selectdata=True,field='',spw='1',timerange='',uvrange='',antenna='',scan='',observation='',intent='',datacolumn='data',imagename=img_name+'_dirty',imsize=imsz,cell='0.15arcsec',phasecenter=phase_c,stokes='I',projection='SIN',startmodel='',specmode='cube',reffreq='',outframe='',veltype='radio',restfreq='230.538GHz',interpolation='linear',perchanweightdensity=True,gridder='mosaic',facets=1,psfphasecenter='',wprojplanes=1,vptable='',mosweight=True,aterm=True,psterm=False,wbawp=True,conjbeams=False,cfcache='',usepointing=False,computepastep=360.0,rotatepastep=360.0,pointingoffsetsigdev=[],pblimit=0.2,normtype='flatnoise',deconvolver='multiscale',scales=[0, 6, 12],nterms=2,smallscalebias=0.0,fusedthreshold=0.0,largestscale=-1,restoration=True,restoringbeam='',pbcor=False,outlierfile='',weighting='briggs',robust=0.5,npixels=0,uvtaper=[],niter=0,gain=0.1,threshold='2.0mJy/beam',nsigma=0.0,cycleniter=100,cyclefactor=3.0,minpsffraction=0.05,maxpsffraction=0.8,interactive=False,nmajor=-1,fullsummary=False,usemask='auto-multithresh',mask='',pbmask=0.2,sidelobethreshold=2.0,noisethreshold=4.25,lownoisethreshold=1.5,negativethreshold=0.0,smoothfactor=1.0,minbeamfrac=0.3,cutthreshold=0.01,growiterations=75,dogrowprune=True,minpercentchange=-1.0,verbose=False,fastnoise=True,restart=True,savemodel='none',calcres=True,calcpsf=True,psfcutoff=0.35,parallel=True )
+tclean(vis=img_list,selectdata=True,field='',spw='1',timerange='',uvrange='',antenna='',scan='',observation='',intent='',datacolumn='corrected',imagename=img_name+'_dirty',imsize=imsz,cell='0.15arcsec',phasecenter=phase_c,stokes='I',projection='SIN',startmodel='',specmode='cube',reffreq='',outframe='',veltype='radio',restfreq='230.538GHz',interpolation='linear',perchanweightdensity=True,gridder='mosaic',facets=1,psfphasecenter='',wprojplanes=1,vptable='',mosweight=True,aterm=True,psterm=False,wbawp=True,conjbeams=False,cfcache='',usepointing=False,computepastep=360.0,rotatepastep=360.0,pointingoffsetsigdev=[],pblimit=0.2,normtype='flatnoise',deconvolver='multiscale',scales=[0, 6, 12],nterms=2,smallscalebias=0.0,fusedthreshold=0.0,largestscale=-1,restoration=True,restoringbeam='',pbcor=False,outlierfile='',weighting='briggs',robust=0.5,npixels=0,uvtaper=[],niter=0,gain=0.1,threshold='2.0mJy/beam',nsigma=0.0,cycleniter=100,cyclefactor=3.0,minpsffraction=0.05,maxpsffraction=0.8,interactive=False,nmajor=-1,fullsummary=False,usemask='auto-multithresh',mask='',pbmask=0.2,sidelobethreshold=2.0,noisethreshold=4.25,lownoisethreshold=1.5,negativethreshold=0.0,smoothfactor=1.0,minbeamfrac=0.3,cutthreshold=0.01,growiterations=75,dogrowprune=True,minpercentchange=-1.0,verbose=False,fastnoise=True,restart=True,savemodel='none',calcres=True,calcpsf=True,psfcutoff=0.35,parallel=True )
 
 
 # Identify 7+12 channels
@@ -166,9 +171,9 @@ print('GOAL RMS: ',rms,min_chan,max_chan)
 
 #### Deep cleaning
 
-tclean(vis=img_list,selectdata=True,field='',spw='1',timerange='',uvrange='',antenna='',scan='',observation='',intent='',datacolumn='data',imagename=img_name,imsize=imsz,cell='0.15arcsec',start=min_chan,nchan=int(max_chan-min_chan),phasecenter=phase_c,stokes='I',projection='SIN',startmodel='',specmode='cube',reffreq='',outframe='',veltype='radio',restfreq='230.538GHz',interpolation='linear',perchanweightdensity=True,gridder='mosaic',facets=1,psfphasecenter='',wprojplanes=1,vptable='',mosweight=True,aterm=True,psterm=False,wbawp=True,conjbeams=False,cfcache='',usepointing=False,computepastep=360.0,rotatepastep=360.0,pointingoffsetsigdev=[],pblimit=0.2,normtype='flatnoise',deconvolver='multiscale',scales=[0, 6, 12],nterms=2,smallscalebias=0.0,fusedthreshold=0.0,largestscale=-1,restoration=True,restoringbeam='common',pbcor=False,outlierfile='',weighting='briggs',robust=0.5,npixels=0,uvtaper=[],niter=500000,gain=0.1,threshold=str(round(rms,3))+'mJy/beam',nsigma=0.0,cycleniter=100,cyclefactor=3.0,minpsffraction=0.05,maxpsffraction=0.8,interactive=False,nmajor=-1,fullsummary=False,usemask='auto-multithresh',mask='',pbmask=0.2,sidelobethreshold=2.0,noisethreshold=4.25,lownoisethreshold=1.5,negativethreshold=0.0,smoothfactor=1.0,minbeamfrac=0.3,cutthreshold=0.01,growiterations=75,dogrowprune=True,minpercentchange=-1.0,verbose=False,fastnoise=True,restart=True,savemodel='none',calcres=True,calcpsf=True,psfcutoff=0.35,parallel=True )
+tclean(vis=img_list,selectdata=True,field='',spw='1',timerange='',uvrange='',antenna='',scan='',observation='',intent='',datacolumn='corrected',imagename=img_name,imsize=imsz,cell='0.15arcsec',start=min_chan,nchan=int(max_chan-min_chan),phasecenter=phase_c,stokes='I',projection='SIN',startmodel='',specmode='cube',reffreq='',outframe='',veltype='radio',restfreq='230.538GHz',interpolation='linear',perchanweightdensity=True,gridder='mosaic',facets=1,psfphasecenter='',wprojplanes=1,vptable='',mosweight=True,aterm=True,psterm=False,wbawp=True,conjbeams=False,cfcache='',usepointing=False,computepastep=360.0,rotatepastep=360.0,pointingoffsetsigdev=[],pblimit=0.2,normtype='flatnoise',deconvolver='multiscale',scales=[0, 6, 12],nterms=2,smallscalebias=0.0,fusedthreshold=0.0,largestscale=-1,restoration=True,restoringbeam='common',pbcor=False,outlierfile='',weighting='briggs',robust=0.5,npixels=0,uvtaper=[],niter=500000,gain=0.1,threshold=str(round(rms,3))+'mJy/beam',nsigma=0.0,cycleniter=100,cyclefactor=3.0,minpsffraction=0.05,maxpsffraction=0.8,interactive=False,nmajor=-1,fullsummary=False,usemask='auto-multithresh',mask='',pbmask=0.2,sidelobethreshold=2.0,noisethreshold=4.25,lownoisethreshold=1.5,negativethreshold=0.0,smoothfactor=1.0,minbeamfrac=0.3,cutthreshold=0.01,growiterations=75,dogrowprune=True,minpercentchange=-1.0,verbose=False,fastnoise=False,restart=True,savemodel='none',calcres=True,calcpsf=True,psfcutoff=0.35,parallel=True )
 #Primary beam correction
-impbcor(imagename=img_name+'.image/',pbimage=img_name+'.pb/',outfile=img_name+'_pbcorr.image/',overwrite=False,box='',region='',chans='',stokes='I',mask='',mode='divide',cutoff=-1.0,stretch=False )
+impbcor(imagename=img_name+'.image/',pbimage=img_name+'.pb/',outfile=img_name+'_pbcorr.image/',overwrite=False,box='',region='',chans='',stokes='I',mask='',mode='divide',cutoff=0.5,stretch=False)
 #Export
 exportfits(imagename=img_name+'_pbcorr.image/',fitsimage=img_name+'_pbcorr.fits',velocity=True)
 exportfits(imagename=img_name+'.pb/',fitsimage=img_name+'_pb.fits',velocity=True)
