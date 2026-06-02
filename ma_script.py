@@ -76,7 +76,7 @@ for fname in glob.glob('./*'): # change directory as needed
 
 #self_list=[]
 # AUTO-SELFCAL per MS: split into targets -> split into line -> autoselfcal
-"""
+
 for file in self_list:
 
     split_calibrated_final(file, overwrite=True)
@@ -112,7 +112,7 @@ for file in self_list:
 
     os.system('mv weblog weblog_'+file.replace('.ms',''))
 
-"""
+
 # Continuum subtraction
 
 uvc_list=[]
