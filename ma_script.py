@@ -124,7 +124,10 @@ print(uvc_list)
 
 for vis in uvc_list:
     os.system('rm -r '+vis.replace('.ms','_line.ms'))
-    uvcontsub(vis=vis,spw='',fitspec='0,2',fitorder=1,outputvis=vis.replace('.ms','_line.ms'),datacolumn='corrected') #CHECK SPW!!!
+   try:
+      uvcontsub(vis=vis,spw='',fitspec='0,2',fitorder=1,outputvis=vis.replace('.ms','_line.ms'),datacolumn='corrected') #CHECK SPW!!!
+   except:
+      uvcontsub(vis=vis,spw='',fitspec='0,2',fitorder=1,outputvis=vis.replace('.ms','_line.ms'),datacolumn='data') # for MS in which autoselfcal could not find any solution
 
 
 ##imaging
