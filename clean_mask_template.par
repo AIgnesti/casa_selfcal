@@ -1,0 +1,172 @@
+# List of template parameter settings for SoFiA
+#
+# Note that SoFiA's default parameters are actually hard-coded in the
+# file Parameter.c, and any changes to this file will have no effect.
+# This file can instead be used as a template for setting up your own
+# parameter files.
+
+
+# Global settings
+
+pipeline.verbose           =  false
+pipeline.pedantic          =  true
+pipeline.threads           =  0
+
+
+# Input
+
+input.data                 = 
+input.region               =  
+input.gain                 =  
+input.noise                =  
+input.weights              =  
+input.primaryBeam          = 
+input.mask                 =  
+input.invert               =  false
+
+
+# Flagging
+
+flag.region                =  
+flag.cube                  =  
+flag.catalog               =  
+flag.radius                =  5
+flag.auto                  =  false
+flag.threshold             =  5.0
+flag.log                   =  false
+
+
+# Continuum subtraction
+
+contsub.enable             =  false
+contsub.order              =  0
+contsub.threshold          =  2.0
+contsub.shift              =  4
+contsub.padding            =  3
+
+
+# Noise scaling
+
+scaleNoise.enable          =  true
+scaleNoise.mode            =  spectral
+scaleNoise.statistic       =  mad
+scaleNoise.fluxRange       =  negative
+scaleNoise.windowXY        =  25
+scaleNoise.windowZ         =  15
+scaleNoise.gridXY          =  0
+scaleNoise.gridZ           =  0
+scaleNoise.interpolate     =  false
+scaleNoise.scfind          =  false
+
+
+# Background subtraction
+
+background.enable          =  false
+background.statistic       =  median
+background.windowXY        =  31
+background.windowZ         =  15
+background.gridXY          =  0
+background.gridZ           =  0
+background.interpolate     =  false
+
+
+# S+C finder
+
+scfind.enable              =  true
+scfind.kernelsXY           =  0, 4, 8
+scfind.kernelsZ            =  0, 3, 7
+scfind.threshold           =  9.0
+scfind.replacement         =  2.0
+scfind.statistic           =  mad
+scfind.fluxRange           =  negative
+
+
+# Threshold finder
+
+threshold.enable           =  false
+threshold.threshold        =  4.5
+threshold.mode             =  relative
+threshold.statistic        =  mad
+threshold.fluxRange        =  negative
+
+
+# Linker
+
+linker.enable              =  true
+linker.radiusXY            =  4
+linker.radiusZ             =  2
+linker.minSizeXY           =  6
+linker.minSizeZ            =  2
+linker.maxSizeXY           =  0
+linker.maxSizeZ            =  0
+linker.minPixels           =  0
+linker.maxPixels           =  0
+linker.minFill             =  0.0
+linker.maxFill             =  0.0
+linker.positivity          =  false
+
+
+# Reliability
+
+reliability.enable         =  false
+reliability.parameters     =  peak, sum, mean
+reliability.threshold      =  0.9
+reliability.scaleKernel    =  0.3
+reliability.autoKernel     =  true
+reliability.iterations     =  30
+reliability.tolerance      =  0.2
+reliability.catalog        =  
+reliability.plot           =  true
+reliability.debug          =  false
+
+
+# Filtering
+
+filter.discardNegative     =  true
+filter.minSNR              =  3.0
+filter.minPixels           =  0
+
+
+# Mask dilation
+
+dilation.enable            =  true
+dilation.iterationsXY      =  15
+dilation.iterationsZ       =  5
+dilation.threshold         =  0.001
+
+
+# Parameterisation
+
+parameter.enable           =  true
+parameter.wcs              =  true
+parameter.physical         =  false
+parameter.prefix           =  SoFiA
+parameter.offset           =  false
+
+
+# Output
+
+output.directory           =  .
+output.filename            =  final_clean
+output.dataFormat          =  fits
+output.writeLogFile        =  false
+output.writeCatASCII       =  false
+output.writeCatXML         =  false
+output.writeCatSQL         =  false
+output.writeNoise          =  false
+output.writeFiltered       =  false
+output.writeMask           =  true
+output.writeMask2d         =  false
+output.writeRawMask        =  false
+output.writeMoments        =  false
+output.writeCubelets       =  false
+output.writePV             =  false
+output.writeKarma          =  false
+output.marginCubeletsXY    =  10
+output.marginCubeletsZ     =  10
+output.marginAperSpec      =  -1
+output.thresholdMom12      =  0.0
+output.showPreviewImage    =  false   # Mac OS users: requires iTerm2
+output.writeDiagnosticPlot =  true
+output.overwrite           =  true
+
