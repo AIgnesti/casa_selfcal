@@ -67,7 +67,7 @@ f0=230.538*(1.-v0/3e5) #GHz
 f1=230.538*(1.-(v0+deltaV)/3e5) #GHz
 
 # Identify MS
-"""
+
 self_list=[]
 for fname in glob.glob('./*'): # change directory as needed
     if fname.endswith('.ms') and not '.selfcal.' in fname and not 'targets' in fname:
@@ -128,7 +128,7 @@ for vis in uvc_list:
         uvcontsub(vis=vis,spw='',fitspec='0,2',fitorder=1,outputvis=vis.replace('.ms','_line.ms'),datacolumn='corrected') #CHECK SPW!!!
     except:
         uvcontsub(vis=vis,spw='',fitspec='0,2',fitorder=1,outputvis=vis.replace('.ms','_line.ms'),datacolumn='data')
-"""
+
 ##imaging
 img_list=[]
 for fname in glob.glob('./*'): # change directory as needed
@@ -173,7 +173,7 @@ print('GOAL RMS: ',rms,min_chan,max_chan)
 
 #### Deep cleaning
 # down to 6 sigma with high-thresh mask
-"""
+
 tclean(vis=img_list,selectdata=True,field='',spw='1',timerange='',uvrange='',antenna='',scan='',observation='',intent='',datacolumn='corrected',imagename=img_name,imsize=imsz,cell='0.15arcsec',start=min_chan,nchan=int(max_chan-min_chan),phasecenter=phase_c,stokes='I',projection='SIN',startmodel='',specmode='cube',reffreq='',outframe='',veltype='radio',restfreq='230.538GHz',interpolation='linear',perchanweightdensity=True,gridder='mosaic',facets=1,psfphasecenter='',wprojplanes=1,vptable='',mosweight=True,aterm=True,psterm=False,wbawp=True,conjbeams=False,cfcache='',usepointing=False,computepastep=360.0,rotatepastep=360.0,pointingoffsetsigdev=[],pblimit=0.2,normtype='flatnoise',deconvolver='multiscale',scales=[0, 6, 12,24],nterms=2,smallscalebias=0.6,fusedthreshold=0.0,largestscale=-1,restoration=True,restoringbeam='common',pbcor=False,outlierfile='',weighting='briggs',robust=0.5,npixels=0,uvtaper=[],niter=500000,gain=0.1,threshold=str(round(3.*rms,3))+'mJy/beam',nsigma=0.0,cycleniter=100,cyclefactor=3.0,minpsffraction=0.05,maxpsffraction=0.8,interactive=False,nmajor=-1,fullsummary=False,usemask='auto-multithresh',mask='',pbmask=0.2,sidelobethreshold=3.5,noisethreshold=4.25,lownoisethreshold=2.5,negativethreshold=0.0,smoothfactor=1.0,minbeamfrac=0.3,cutthreshold=0.01,growiterations=75,dogrowprune=True,minpercentchange=-1.0,verbose=False,fastnoise=False,restart=True,savemodel='none',calcres=True,calcpsf=True,psfcutoff=0.35,parallel=True )
 
 # Making final clean mask
@@ -182,7 +182,7 @@ exportfits(imagename=img_name+'_pbcorr.image/',fitsimage=img_name+'_pbcorr.fits'
 exportfits(imagename=img_name+'.pb/',fitsimage=img_name+'_pb.fits',velocity=True,overwrite=True)
 
 os.system('sofia ~/clean_mask_template.par input.data='+img_name+'_pbcorr.fits input.primaryBeam='+img_name+'_pb.fits')
-"""
+
 importfits(imagename='final_mask.mask',fitsimage='final_clean_mask.fits',overwrite=True)
 
 # Some dark magic to convince casa to use the new mask
