@@ -69,11 +69,18 @@ f1=230.538*(1.-(v0+deltaV)/3e5) #GHz
 # Identify MS
 
 self_list=[]
-for fname in glob.glob('./*'): # change directory as needed
-    if fname.endswith('.ms') and not '.selfcal.' in fname and not 'targets' in fname:
-        file=fname.replace('./','')
-        self_list.append(file)
 
+for x in os.listdir():
+    if x.startswith('weblog'):
+        print(x)
+
+
+for fname in os.listdir(): # change directory as needed
+    if fname.endswith('.ms') and not '.selfcal.' in fname and not 'targets' in fname and not 'Target' in fname:
+
+        if not 'weblog_'+fname.replace('.ms','') in os.listdir():
+            self_list.append(fname)
+print(self_list)
 #self_list=[]
 # AUTO-SELFCAL per MS: split into targets -> split into line -> autoselfcal
 
@@ -82,10 +89,11 @@ for file in self_list:
     split_calibrated_final(file, overwrite=True)
     targets=str(file.replace('.ms','_targets.ms'))
     msmda.open(targets)
+
     spw_list=-1
     vmin=0
     vmax=0
-    for spw_[-0.0252985, 0.0546596]id in [0,1,2,3]:
+    for spw_id in [0,1,2,3]:
         chan_freqs = msmda.chanfreqs(spw=spw_id, unit="Hz")/1e9
 
         if chan_freqs[-1]<f_mid and chan_freqs[0]>f_mid:
@@ -93,17 +101,16 @@ for file in self_list:
             print(chan_freqs[0],f0,f_mid,f1,chan_freqs[-1],len(chan_freqs))
             vmin=3e5*(1.-chan_freqs[0]/230.538)
             vmax=3e5*(1.-chan_freqs[-1]/230.538)
+
+            print(vmin,v0,v1,vmax)
+            nchan_pre=min(int(abs(v0-vmin)/channel_wv),20)
+            nchan_post=min(int(abs(v1-vmax)/channel_wv),20)
+            mstransform(targets,outputvis=targets.replace('_targets.ms','_targets_pre.ms'),spw=str(spw_list),datacolumn='data',regridms=True,nchan=nchan_pre,start=str(v0-nchan_pre*channel_wv)+'km/s',width=str(channel_wv)+'km/s',restfreq='230.538GHz',mode='velocity',nspw=1)
+            mstransform(targets,outputvis=targets.replace('_targets.ms','_targets_post.ms'),spw=str(spw_list),datacolumn='data',regridms=True,nchan=nchan_post,start=str(v1)+'km/s',width=str(channel_wv)+'km/s',restfreq='230.538GHz',mode='velocity',nspw=1)
+            mstransform(targets,outputvis=targets.replace('_targets.ms','_targets_mid.ms'),spw=str(spw_list),datacolumn='data',regridms=True,nchan=int(nchan),start=str(v0)+'km/s',width=str(channel_wv)+'km/s',restfreq='230.538GHz',mode='velocity',nspw=1)
+            concat([targets.replace('_targets.ms','_targets_pre.ms'),targets.replace('_targets.ms','_targets_mid.ms'),targets.replace('_targets.ms','_targets_post.ms')],concatvis=targets.replace('_targets.ms','_targets_vel.ms'))
     msmda.done()
-    print(vmin,v0,v1,vmax)
-    nchan_pre=min(int(abs(v0-vmin)/channel_wv),20)
-    nchan_post=min(int(abs(v1-vmax)/channel_wv),20)
-    mstransform(targets,outputvis=targets.replace('_targets.ms','_targets_pre.ms'),spw=str(spw_list),datacolumn='data',regridms=True,nchan=nchan_pre,start=str(v0-nchan_pre*channel_wv)+'km/s',width=str(channel_wv)+'km/s',phasecenter=phase_c,restfreq='230.538GHz',mode='velocity',nspw=1)
-    mstransform(targets,outputvis=targets.replace('_targets.ms','_targets_post.ms'),spw=str(spw_list),datacolumn='data',regridms=True,nchan=nchan_post,start=str(v1)+'km/s',width=str(channel_wv)+'km/s',phasecenter=phase_c,restfreq='230.538GHz',mode='velocity',nspw=1)
-    mstransform(targets,outputvis=targets.replace('_targets.ms','_targets_mid.ms'),spw=str(spw_list),datacolumn='data',regridms=True,nchan=int(nchan),start=str(v0)+'km/s',width=str(channel_wv)+'km/s',phasecenter=phase_c,restfreq='230.538GHz',mode='velocity',nspw=1)
-    concat([targets.replace('_targets.ms','_targets_pre.ms'),targets.replace('_targets.ms','_targets_mid.ms'),targets.replace('_targets.ms','_targets_post.ms')],concatvis=targets.replace('_targets.ms','_targets_vel.ms'))
-
-
-    auto_selfcal(targets.replace('_targets.ms','_targets_vel.ms'), parallel=parallel,spectral_average=False,optimize_spw_combine=True,minsnr_to_proceed=3.0,gaincal_minsnr=3.0,allow_gain_interpolation=True,guess_scan_combine=True,allow_cocal=False,delta_beam_thresh=10,apply_to_target_ms=False,check_all_spws=False,apply_cal_mode_default='calflag',inf_EB_gaintype='T',inf_EB_gaincal_combine='scan',dividing_factor=5,do_amp_selfcal=False)
+    auto_selfcal(targets.replace('_targets.ms','_targets_vel.ms'), parallel=parallel,spectral_average=False,optimize_spw_combine=False,minsnr_to_proceed=3.0,gaincal_minsnr=3.0,allow_gain_interpolation=True,guess_scan_combine=True,allow_cocal=False,delta_beam_thresh=10,apply_to_target_ms=False,check_all_spws=False,apply_cal_mode_default='calflag',inf_EB_gaintype='T',inf_EB_gaincal_combine='scan',dividing_factor=7,do_amp_selfcal=False)
     os.system('rm -r *.tt0')
     os.system('rm -r *.mask')
     os.system('rm -r '+targets.replace('_targets.ms','_targets_pre.ms'))
@@ -156,7 +163,7 @@ for im in img_list:
 
 ### Dirty image to compute goal noise
 
-#tclean(vis=img_list,selectdata=True,field='',spw='1',timerange='',uvrange='',antenna='',scan='',observation='',intent='',datacolumn='corrected',imagename=img_name+'_dirty',imsize=imsz,cell='0.15arcsec',phasecenter=phase_c,stokes='I',projection='SIN',startmodel='',specmode='cube',reffreq='',outframe='',veltype='radio',restfreq='230.538GHz',interpolation='linear',perchanweightdensity=True,gridder='mosaic',facets=1,psfphasecenter='',wprojplanes=1,vptable='',mosweight=True,aterm=True,psterm=False,wbawp=True,conjbeams=False,cfcache='',usepointing=False,computepastep=360.0,rotatepastep=360.0,pointingoffsetsigdev=[],pblimit=0.2,normtype='flatnoise',deconvolver='multiscale',scales=[0, 6, 12],nterms=2,smallscalebias=0.0,fusedthreshold=0.0,largestscale=-1,restoration=True,restoringbeam='',pbcor=False,outlierfile='',weighting='briggs',robust=0.5,npixels=0,uvtaper=[],niter=0,gain=0.1,threshold='2.0mJy/beam',nsigma=0.0,cycleniter=100,cyclefactor=3.0,minpsffraction=0.05,maxpsffraction=0.8,interactive=False,nmajor=-1,fullsummary=False,usemask='auto-multithresh',mask='',pbmask=0.2,sidelobethreshold=2.0,noisethreshold=4.25,lownoisethreshold=1.5,negativethreshold=0.0,smoothfactor=1.0,minbeamfrac=0.3,cutthreshold=0.01,growiterations=75,dogrowprune=True,minpercentchange=-1.0,verbose=False,fastnoise=True,restart=True,savemodel='none',calcres=True,calcpsf=True,psfcutoff=0.35,parallel=True )
+tclean(vis=img_list,selectdata=True,field='',spw='1',timerange='',uvrange='',antenna='',scan='',observation='',intent='',datacolumn='corrected',imagename=img_name+'_dirty',imsize=imsz,cell='0.15arcsec',phasecenter=phase_c,stokes='I',projection='SIN',startmodel='',specmode='cube',reffreq='',outframe='',veltype='radio',restfreq='230.538GHz',interpolation='linear',perchanweightdensity=True,gridder='mosaic',facets=1,psfphasecenter='',wprojplanes=1,vptable='',mosweight=True,aterm=True,psterm=False,wbawp=True,conjbeams=False,cfcache='',usepointing=False,computepastep=360.0,rotatepastep=360.0,pointingoffsetsigdev=[],pblimit=0.2,normtype='flatnoise',deconvolver='multiscale',scales=[0, 6, 12],nterms=2,smallscalebias=0.0,fusedthreshold=0.0,largestscale=-1,restoration=True,restoringbeam='',pbcor=False,outlierfile='',weighting='briggs',robust=0.5,npixels=0,uvtaper=[],niter=0,gain=0.1,threshold='2.0mJy/beam',nsigma=0.0,cycleniter=100,cyclefactor=3.0,minpsffraction=0.05,maxpsffraction=0.8,interactive=False,nmajor=-1,fullsummary=False,usemask='auto-multithresh',mask='',pbmask=0.2,sidelobethreshold=2.0,noisethreshold=4.25,lownoisethreshold=1.5,negativethreshold=0.0,smoothfactor=1.0,minbeamfrac=0.3,cutthreshold=0.01,growiterations=75,dogrowprune=True,minpercentchange=-1.0,verbose=False,fastnoise=True,restart=True,savemodel='none',calcres=True,calcpsf=True,psfcutoff=0.35,parallel=True )
 
 
 # Identify 7+12 channels
@@ -172,16 +179,16 @@ rms=(0.5*(rms1+rms2)*1e3)*2. # Clean threshold at 2 sigma in mJy
 print('GOAL RMS: ',rms,min_chan,max_chan)
 
 #### Deep cleaning
-# down to 6 sigma with high-thresh mask
+# down to 10 sigma with high-thresh mask
 
-tclean(vis=img_list,selectdata=True,field='',spw='1',timerange='',uvrange='',antenna='',scan='',observation='',intent='',datacolumn='corrected',imagename=img_name,imsize=imsz,cell='0.15arcsec',start=min_chan,nchan=int(max_chan-min_chan),phasecenter=phase_c,stokes='I',projection='SIN',startmodel='',specmode='cube',reffreq='',outframe='',veltype='radio',restfreq='230.538GHz',interpolation='linear',perchanweightdensity=True,gridder='mosaic',facets=1,psfphasecenter='',wprojplanes=1,vptable='',mosweight=True,aterm=True,psterm=False,wbawp=True,conjbeams=False,cfcache='',usepointing=False,computepastep=360.0,rotatepastep=360.0,pointingoffsetsigdev=[],pblimit=0.2,normtype='flatnoise',deconvolver='multiscale',scales=[0, 6, 12,24],nterms=2,smallscalebias=0.6,fusedthreshold=0.0,largestscale=-1,restoration=True,restoringbeam='common',pbcor=False,outlierfile='',weighting='briggs',robust=0.5,npixels=0,uvtaper=[],niter=500000,gain=0.1,threshold=str(round(3.*rms,3))+'mJy/beam',nsigma=0.0,cycleniter=100,cyclefactor=3.0,minpsffraction=0.05,maxpsffraction=0.8,interactive=False,nmajor=-1,fullsummary=False,usemask='auto-multithresh',mask='',pbmask=0.2,sidelobethreshold=3.5,noisethreshold=4.25,lownoisethreshold=2.5,negativethreshold=0.0,smoothfactor=1.0,minbeamfrac=0.3,cutthreshold=0.01,growiterations=75,dogrowprune=True,minpercentchange=-1.0,verbose=False,fastnoise=False,restart=True,savemodel='none',calcres=True,calcpsf=True,psfcutoff=0.35,parallel=True )
+tclean(vis=img_list,selectdata=True,field='',spw='1',timerange='',uvrange='',antenna='',scan='',observation='',intent='',datacolumn='corrected',imagename=img_name,imsize=imsz,cell='0.15arcsec',start=min_chan,nchan=int(max_chan-min_chan),phasecenter=phase_c,stokes='I',projection='SIN',startmodel='',specmode='cube',reffreq='',outframe='',veltype='radio',restfreq='230.538GHz',interpolation='linear',perchanweightdensity=True,gridder='mosaic',facets=1,psfphasecenter='',wprojplanes=1,vptable='',mosweight=True,aterm=True,psterm=False,wbawp=True,conjbeams=False,cfcache='',usepointing=False,computepastep=360.0,rotatepastep=360.0,pointingoffsetsigdev=[],pblimit=0.2,normtype='flatnoise',deconvolver='multiscale',scales=[0, 6, 12],nterms=2,smallscalebias=0.6,fusedthreshold=0.0,largestscale=-1,restoration=True,restoringbeam='common',pbcor=False,outlierfile='',weighting='briggs',robust=0.5,npixels=0,uvtaper=[],niter=500000,gain=0.1,threshold=str(round(5.*rms,3))+'mJy/beam',nsigma=0.0,cycleniter=100,cyclefactor=3.0,minpsffraction=0.05,maxpsffraction=0.8,interactive=False,nmajor=-1,fullsummary=False,usemask='auto-multithresh',mask='',pbmask=0.2,sidelobethreshold=3.5,noisethreshold=4.25,lownoisethreshold=2.5,negativethreshold=0.0,smoothfactor=1.0,minbeamfrac=0.3,cutthreshold=0.01,growiterations=75,dogrowprune=True,minpercentchange=-1.0,verbose=False,fastnoise=False,restart=True,savemodel='none',calcres=True,calcpsf=True,psfcutoff=0.35,parallel=True )
 
 # Making final clean mask
 impbcor(imagename=img_name+'.image/',pbimage=img_name+'.pb/',outfile=img_name+'_pbcorr.image/',box='',region='',chans='',stokes='I',mask='',mode='divide',cutoff=0.5,stretch=False,overwrite=True)
 exportfits(imagename=img_name+'_pbcorr.image/',fitsimage=img_name+'_pbcorr.fits',velocity=True,overwrite=True)
 exportfits(imagename=img_name+'.pb/',fitsimage=img_name+'_pb.fits',velocity=True,overwrite=True)
 
-os.system('sofia ~/clean_mask_template.par input.data='+img_name+'_pbcorr.fits input.primaryBeam='+img_name+'_pb.fits')
+os.system('sofia ~/clean_mask_template.par input.data='+img_name+'_pbcorr.fits input.primaryBeam='+img_name+'_pb.fits scfind.threshold=6.0')
 
 importfits(imagename='final_mask.mask',fitsimage='final_clean_mask.fits',overwrite=True)
 
@@ -193,7 +200,7 @@ imtrans(imagename='final_mask_I.mask', outfile='final_mask_I_sorted.mask', order
 
 os.system('rm -r '+img_name+'.mask')
 
-tclean(vis=img_list,selectdata=True,field='',spw='1',timerange='',uvrange='',antenna='',scan='',observation='',intent='',datacolumn='corrected',imagename=img_name,imsize=imsz,cell='0.15arcsec',start=min_chan,nchan=int(max_chan-min_chan),phasecenter=phase_c,stokes='I',projection='SIN',startmodel='',specmode='cube',reffreq='',outframe='',veltype='radio',restfreq='230.538GHz',interpolation='linear',perchanweightdensity=True,gridder='mosaic',facets=1,psfphasecenter='',wprojplanes=1,vptable='',mosweight=True,aterm=True,psterm=False,wbawp=True,conjbeams=False,cfcache='',usepointing=False,computepastep=360.0,rotatepastep=360.0,pointingoffsetsigdev=[],pblimit=0.2,normtype='flatnoise',deconvolver='multiscale',scales=[0, 6, 12,24],nterms=2,smallscalebias=0.6,fusedthreshold=0.0,largestscale=-1,restoration=True,restoringbeam='common',pbcor=False,outlierfile='',weighting='briggs',robust=0.5,npixels=0,uvtaper=[],niter=500000,gain=0.2,threshold=str(round(rms,3))+'mJy/beam',nsigma=0.0,cycleniter=100,cyclefactor=1.0,minpsffraction=0.05,maxpsffraction=0.8,interactive=False,nmajor=-1,fullsummary=False,usemask='user',mask='final_mask_I_sorted.mask',pbmask=0.2,verbose=False,fastnoise=False,restart=True,savemodel='none',calcres=False,calcpsf=False,psfcutoff=0.35,parallel=True )
+tclean(vis=img_list,selectdata=True,field='',spw='1',timerange='',uvrange='',antenna='',scan='',observation='',intent='',datacolumn='corrected',imagename=img_name,imsize=imsz,cell='0.15arcsec',start=min_chan,nchan=int(max_chan-min_chan),phasecenter=phase_c,stokes='I',projection='SIN',startmodel='',specmode='cube',reffreq='',outframe='',veltype='radio',restfreq='230.538GHz',interpolation='linear',perchanweightdensity=True,gridder='mosaic',facets=1,psfphasecenter='',wprojplanes=1,vptable='',mosweight=True,aterm=True,psterm=False,wbawp=True,conjbeams=False,cfcache='',usepointing=False,computepastep=360.0,rotatepastep=360.0,pointingoffsetsigdev=[],pblimit=0.2,normtype='flatnoise',deconvolver='multiscale',scales=[0, 6, 12],nterms=2,smallscalebias=0.6,fusedthreshold=0.0,largestscale=-1,restoration=True,restoringbeam='common',pbcor=False,outlierfile='',weighting='briggs',robust=0.5,npixels=0,uvtaper=[],niter=500000,gain=0.2,threshold=str(round(rms,3))+'mJy/beam',nsigma=0.0,cycleniter=100,cyclefactor=1.0,minpsffraction=0.05,maxpsffraction=0.8,interactive=False,nmajor=-1,fullsummary=False,usemask='user',mask='final_mask_I_sorted.mask',pbmask=0.2,verbose=False,fastnoise=False,restart=True,savemodel='none',calcres=False,calcpsf=False,psfcutoff=0.35,parallel=True )
 
 
 #### Primary beam correction
