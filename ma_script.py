@@ -123,7 +123,7 @@ for file in self_list:
 # Continuum subtraction
 
 uvc_list=[]
-for fname in os.listdir() # change directory as needed
+for fname in os.listdir(): # change directory as needed
     if fname.endswith('.selfcal.ms') and fname.startswith('Target'):
         os.system('rm -r '+fname.replace('.ms','_line.ms'))
         try:
