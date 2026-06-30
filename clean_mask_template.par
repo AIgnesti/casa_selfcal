@@ -15,21 +15,21 @@ pipeline.threads           =  0
 
 # Input
 
-input.data                 = 
-input.region               =  
-input.gain                 =  
-input.noise                =  
-input.weights              =  
-input.primaryBeam          = 
-input.mask                 =  
+input.data                 =
+input.region               =
+input.gain                 =
+input.noise                =
+input.weights              =
+input.primaryBeam          =
+input.mask                 =
 input.invert               =  false
 
 
 # Flagging
 
-flag.region                =  
-flag.cube                  =  
-flag.catalog               =  
+flag.region                =
+flag.cube                  =
+flag.catalog               =
 flag.radius                =  5
 flag.auto                  =  false
 flag.threshold             =  5.0
@@ -75,7 +75,7 @@ background.interpolate     =  false
 scfind.enable              =  true
 scfind.kernelsXY           =  0, 4, 8
 scfind.kernelsZ            =  0, 3, 7
-scfind.threshold           =  9.0
+scfind.threshold           =
 scfind.replacement         =  2.0
 scfind.statistic           =  mad
 scfind.fluxRange           =  negative
@@ -108,14 +108,14 @@ linker.positivity          =  false
 
 # Reliability
 
-reliability.enable         =  false
+reliability.enable         =
 reliability.parameters     =  peak, sum, mean
 reliability.threshold      =  0.9
 reliability.scaleKernel    =  0.3
 reliability.autoKernel     =  true
 reliability.iterations     =  30
 reliability.tolerance      =  0.2
-reliability.catalog        =  
+reliability.catalog        =
 reliability.plot           =  true
 reliability.debug          =  false
 
@@ -169,4 +169,3 @@ output.thresholdMom12      =  0.0
 output.showPreviewImage    =  false   # Mac OS users: requires iTerm2
 output.writeDiagnosticPlot =  true
 output.overwrite           =  true
-

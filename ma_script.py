@@ -6,11 +6,11 @@ from auto_selfcal import auto_selfcal, split_calibrated_final
 import glob
 import casatasks
 from casatools import msmetadata
-
+path_sofia_templates='~/'
 os.system('cp ~/bin/casa/auto_selfcal/bin/ma_script.py .')
 os.system('mv ma_script.py ma_script_run.txt')
 msmda = msmetadata()
-
+os.system('ulimit -n 5000')
 # Mac builds of CASA lack MPI and error without this try/except
 try:
    from casampi.MPIEnvironment import MPIEnvironment
@@ -43,7 +43,23 @@ def psf_per_channel(cube_path):
             #print(f"{chan_num:<10}{major:<15.4f}{minor:<15.4f}{pa:<10.2f}")
         return min(chan_list),max(chan_list)
 
+def make_clean_mask(img_name,mask_thr,outfile,rel):
+    impbcor(imagename=img_name+'.image/',pbimage=img_name+'.pb/',outfile=img_name+'_pbcorr.image/',box='',region='',chans='',stokes='I',mask='',mode='divide',cutoff=0.5,stretch=False,overwrite=True)
+    exportfits(imagename=img_name+'_pbcorr.image/',fitsimage=img_name+'_pbcorr.fits',velocity=True,overwrite=True)
+    exportfits(imagename=img_name+'.pb/',fitsimage=img_name+'_pb.fits',velocity=True,overwrite=True)
 
+    os.system('sofia '+path_sofia_templates+'clean_mask_template.par input.data='+img_name+'_pbcorr.fits input.primaryBeam='+img_name+'_pb.fits scfind.threshold='+str(mask_thr)+' reliability.enable='+rel)
+
+    importfits(imagename='final_mask.mask',fitsimage='final_clean_mask.fits',overwrite=True)
+
+    # Some dark magic to convince casa to use the new mask
+    ia.open('final_mask.mask')
+    ia.adddegaxes(outfile='final_mask_I.mask', stokes='I', overwrite=True)
+    ia.close()
+
+    imtrans(imagename='final_mask_I.mask', outfile=outfile, order=['Right Ascension', 'Declination', 'Stokes', 'Frequency'])
+
+    os.system('rm -r '+img_name+'.mask')
 
 with open('autoselfcal_par.txt') as f:
     lines = [line.rstrip('\n') for line in f if not line.startswith('#')]
@@ -110,7 +126,7 @@ for file in self_list:
             mstransform(targets,outputvis=targets.replace('_targets.ms','_targets_mid.ms'),spw=str(spw_list),datacolumn='data',regridms=True,nchan=int(nchan),start=str(v0)+'km/s',width=str(channel_wv)+'km/s',restfreq='230.538GHz',mode='velocity',nspw=1,phasecenter=phase_c)
             concat([targets.replace('_targets.ms','_targets_pre.ms'),targets.replace('_targets.ms','_targets_mid.ms'),targets.replace('_targets.ms','_targets_post.ms')],concatvis=targets.replace('_targets.ms','_targets_vel.ms'))
     msmda.done()
-    auto_selfcal(targets.replace('_targets.ms','_targets_vel.ms'), parallel=parallel,spectral_average=False,optimize_spw_combine=False,minsnr_to_proceed=3.0,gaincal_minsnr=3.0,allow_gain_interpolation=True,guess_scan_combine=True,allow_cocal=False,delta_beam_thresh=10,apply_to_target_ms=False,check_all_spws=False,apply_cal_mode_default='calflag',inf_EB_gaintype='T',inf_EB_gaincal_combine='scan',dividing_factor=7,do_amp_selfcal=False,sidelobethreshold=2.2,noisethreshold=9.0)
+    auto_selfcal(targets.replace('_targets.ms','_targets_vel.ms'), parallel=parallel,spectral_average=False,optimize_spw_combine=False,minsnr_to_proceed=3.0,gaincal_minsnr=3.0,allow_gain_interpolation=True,guess_scan_combine=True,allow_cocal=False,delta_beam_thresh=10,apply_to_target_ms=False,check_all_spws=False,apply_cal_mode_default='calflag',inf_EB_gaintype='T',inf_EB_gaincal_combine='scan',dividing_factor=15,do_amp_selfcal=False,sidelobethreshold=2.0,noisethreshold=4.0)
     os.system('rm -r *.tt0')
     os.system('rm -r *.mask')
     os.system('rm -r '+targets.replace('_targets.ms','_targets_pre.ms'))
@@ -155,32 +171,26 @@ chanstat=imstat(imagename=img_name+'_dirty.image',chans=str(min_chan)+'~'+str(mi
 rms1= chanstat['rms'][0]
 chanstat=imstat(imagename=img_name+'_dirty.image',chans=str(max_chan-11)+'~'+str(max_chan-1))
 rms2= chanstat['rms'][0]
-rms=(0.5*(rms1+rms2)*1e3)*2. # Clean threshold at 2 sigma in mJy
+rms=(0.5*(rms1+rms2)*1e3) # Clean threshold at 1 sigma in mJy
 print('GOAL RMS: ',rms,min_chan,max_chan)
 
 #### Deep cleaning
 # down to 10 sigma with high-thresh mask
 
-tclean(vis=img_list,selectdata=True,field='',spw='1',timerange='',uvrange='',antenna='',scan='',observation='',intent='',datacolumn='corrected',imagename=img_name,imsize=imsz,cell='0.15arcsec',start=min_chan,nchan=int(max_chan-min_chan),phasecenter=phase_c,stokes='I',projection='SIN',startmodel='',specmode='cube',reffreq='',outframe='',veltype='radio',restfreq='230.538GHz',interpolation='linear',perchanweightdensity=True,gridder='mosaic',facets=1,psfphasecenter='',wprojplanes=1,vptable='',mosweight=True,aterm=True,psterm=False,wbawp=True,conjbeams=False,cfcache='',usepointing=False,computepastep=360.0,rotatepastep=360.0,pointingoffsetsigdev=[],pblimit=0.2,normtype='flatnoise',deconvolver='multiscale',scales=[0, 6, 12],nterms=2,smallscalebias=0.6,fusedthreshold=0.0,largestscale=-1,restoration=True,restoringbeam='common',pbcor=False,outlierfile='',weighting='briggs',robust=0.5,npixels=0,uvtaper=[],niter=500000,gain=0.1,threshold=str(round(5.*rms,3))+'mJy/beam',nsigma=0.0,cycleniter=100,cyclefactor=3.0,minpsffraction=0.05,maxpsffraction=0.8,interactive=False,nmajor=-1,fullsummary=False,usemask='auto-multithresh',mask='',pbmask=0.2,sidelobethreshold=3.5,noisethreshold=4.25,lownoisethreshold=2.5,negativethreshold=0.0,smoothfactor=1.0,minbeamfrac=0.3,cutthreshold=0.01,growiterations=75,dogrowprune=True,minpercentchange=-1.0,verbose=False,fastnoise=False,restart=True,savemodel='none',calcres=True,calcpsf=True,psfcutoff=0.35,parallel=True )
+tclean(vis=img_list,selectdata=True,field='',spw='1',timerange='',uvrange='',antenna='',scan='',observation='',intent='',datacolumn='corrected',imagename=img_name,imsize=imsz,cell='0.15arcsec',start=min_chan,nchan=int(max_chan-min_chan),phasecenter=phase_c,stokes='I',projection='SIN',startmodel='',specmode='cube',reffreq='',outframe='',veltype='radio',restfreq='230.538GHz',interpolation='linear',perchanweightdensity=True,gridder='mosaic',facets=1,psfphasecenter='',wprojplanes=1,vptable='',mosweight=True,aterm=True,psterm=False,wbawp=True,conjbeams=False,cfcache='',usepointing=False,computepastep=360.0,rotatepastep=360.0,pointingoffsetsigdev=[],pblimit=0.2,normtype='flatnoise',deconvolver='multiscale',scales=[0, 6, 12],nterms=2,smallscalebias=0.6,fusedthreshold=0.0,largestscale=-1,restoration=True,restoringbeam='common',pbcor=False,outlierfile='',weighting='briggs',robust=0.5,npixels=0,uvtaper=[],niter=500000,gain=0.3,threshold=str(round(10.*rms,3))+'mJy/beam',nsigma=0.0,cycleniter=50,cyclefactor=3.0,minpsffraction=0.05,maxpsffraction=0.8,interactive=False,nmajor=-1,fullsummary=False,usemask='auto-multithresh',mask='',pbmask=0.2,sidelobethreshold=3.5,noisethreshold=4.25,lownoisethreshold=2.5,negativethreshold=0.0,smoothfactor=1.0,minbeamfrac=0.3,cutthreshold=0.01,growiterations=75,dogrowprune=True,minpercentchange=-1.0,verbose=False,fastnoise=False,restart=False,savemodel='none',calcres=True,calcpsf=True,psfcutoff=0.35,parallel=True )
 
 # Making final clean mask
-impbcor(imagename=img_name+'.image/',pbimage=img_name+'.pb/',outfile=img_name+'_pbcorr.image/',box='',region='',chans='',stokes='I',mask='',mode='divide',cutoff=0.5,stretch=False,overwrite=True)
-exportfits(imagename=img_name+'_pbcorr.image/',fitsimage=img_name+'_pbcorr.fits',velocity=True,overwrite=True)
-exportfits(imagename=img_name+'.pb/',fitsimage=img_name+'_pb.fits',velocity=True,overwrite=True)
 
-os.system('sofia ~/clean_mask_template.par input.data='+img_name+'_pbcorr.fits input.primaryBeam='+img_name+'_pb.fits scfind.threshold=8.0')
+make_clean_mask(img_name,6.0,'final_mask_I_sorted.mask','false')
 
-importfits(imagename='final_mask.mask',fitsimage='final_clean_mask.fits',overwrite=True)
 
-# Some dark magic to convince casa to use the new mask
-ia.open('final_mask.mask')
-ia.adddegaxes(outfile='final_mask_I.mask', stokes='I', overwrite=True)
-ia.close()
-imtrans(imagename='final_mask_I.mask', outfile='final_mask_I_sorted.mask', order=['Right Ascension', 'Declination', 'Stokes', 'Frequency'])
+tclean(vis=img_list,selectdata=True,field='',spw='1',timerange='',uvrange='',antenna='',scan='',observation='',intent='',datacolumn='corrected',imagename=img_name,imsize=imsz,cell='0.15arcsec',start=min_chan,nchan=int(max_chan-min_chan),phasecenter=phase_c,stokes='I',projection='SIN',startmodel='',specmode='cube',reffreq='',outframe='',veltype='radio',restfreq='230.538GHz',interpolation='linear',perchanweightdensity=True,gridder='mosaic',facets=1,psfphasecenter='',wprojplanes=1,vptable='',mosweight=True,aterm=True,psterm=False,wbawp=True,conjbeams=False,cfcache='',usepointing=False,computepastep=360.0,rotatepastep=360.0,pointingoffsetsigdev=[],pblimit=0.2,normtype='flatnoise',deconvolver='multiscale',scales=[0, 6, 12],nterms=2,smallscalebias=0.6,fusedthreshold=0.0,largestscale=-1,restoration=True,restoringbeam='common',pbcor=False,outlierfile='',weighting='briggs',robust=0.5,npixels=0,uvtaper=[],niter=500000,gain=0.2,threshold=str(round(3.5*rms,3))+'mJy/beam',nsigma=0.0,cycleniter=50,cyclefactor=2.0,minpsffraction=0.05,maxpsffraction=0.8,interactive=False,nmajor=-1,fullsummary=False,usemask='user',mask='final_mask_I_sorted.mask',pbmask=0.2,verbose=False,fastnoise=False,restart=True,savemodel='none',calcres=False,calcpsf=False,psfcutoff=0.35,parallel=True )
 
-os.system('rm -r '+img_name+'.mask')
-#phasecenter=phase_c,
-tclean(vis=img_list,selectdata=True,field='',spw='1',timerange='',uvrange='',antenna='',scan='',observation='',intent='',datacolumn='corrected',imagename=img_name,imsize=imsz,cell='0.15arcsec',start=min_chan,nchan=int(max_chan-min_chan),phasecenter=phase_c,stokes='I',projection='SIN',startmodel='',specmode='cube',reffreq='',outframe='',veltype='radio',restfreq='230.538GHz',interpolation='linear',perchanweightdensity=True,gridder='mosaic',facets=1,psfphasecenter='',wprojplanes=1,vptable='',mosweight=True,aterm=True,psterm=False,wbawp=True,conjbeams=False,cfcache='',usepointing=False,computepastep=360.0,rotatepastep=360.0,pointingoffsetsigdev=[],pblimit=0.2,normtype='flatnoise',deconvolver='multiscale',scales=[0, 6, 12],nterms=2,smallscalebias=0.6,fusedthreshold=0.0,largestscale=-1,restoration=True,restoringbeam='common',pbcor=False,outlierfile='',weighting='briggs',robust=0.5,npixels=0,uvtaper=[],niter=500000,gain=0.2,threshold=str(round(rms,3))+'mJy/beam',nsigma=0.0,cycleniter=100,cyclefactor=1.0,minpsffraction=0.05,maxpsffraction=0.8,interactive=False,nmajor=-1,fullsummary=False,usemask='user',mask='final_mask_I_sorted.mask',pbmask=0.2,verbose=False,fastnoise=False,restart=True,savemodel='none',calcres=False,calcpsf=False,psfcutoff=0.35,parallel=True )
+make_clean_mask(img_name,4.0,'final_mask_I_sorted_2.mask','true')
+
+
+tclean(vis=img_list,selectdata=True,field='',spw='1',timerange='',uvrange='',antenna='',scan='',observation='',intent='',datacolumn='corrected',imagename=img_name,imsize=imsz,cell='0.15arcsec',start=min_chan,nchan=int(max_chan-min_chan),phasecenter=phase_c,stokes='I',projection='SIN',startmodel='',specmode='cube',reffreq='',outframe='',veltype='radio',restfreq='230.538GHz',interpolation='linear',perchanweightdensity=True,gridder='mosaic',facets=1,psfphasecenter='',wprojplanes=1,vptable='',mosweight=True,aterm=True,psterm=False,wbawp=True,conjbeams=False,cfcache='',usepointing=False,computepastep=360.0,rotatepastep=360.0,pointingoffsetsigdev=[],pblimit=0.2,normtype='flatnoise',deconvolver='multiscale',scales=[0, 6, 12],nterms=2,smallscalebias=0.6,fusedthreshold=0.0,largestscale=-1,restoration=True,restoringbeam='common',pbcor=False,outlierfile='',weighting='briggs',robust=0.5,npixels=0,uvtaper=[],niter=500000,gain=0.2,threshold=str(round(1.*rms,3))+'mJy/beam',nsigma=0.0,cycleniter=50,cyclefactor=2.0,minpsffraction=0.05,maxpsffraction=0.8,interactive=False,nmajor=-1,fullsummary=False,usemask='user',mask='final_mask_I_sorted_2.mask',pbmask=0.2,verbose=False,fastnoise=False,restart=True,savemodel='none',calcres=False,calcpsf=False,psfcutoff=0.35,parallel=True )
+
 
 
 #### Primary beam correction
@@ -191,4 +201,4 @@ exportfits(imagename=img_name+'_pbcorr.image/',fitsimage=img_name+'_pbcorr.fits'
 exportfits(imagename=img_name+'.pb/',fitsimage=img_name+'_pb.fits',velocity=True,overwrite=True)
 
 #### SOFIA moments
-os.system('sofia ~/moments_par_template.par input.data='+img_name+'_pbcorr.fits'+' input.primaryBeam='+img_name+'_pb.fits output.filename='+img_name+'_pbcorr')
+os.system('sofia '+path_sofia_templates+'moments_par_template.par input.data='+img_name+'_pbcorr.fits'+' input.primaryBeam='+img_name+'_pb.fits output.filename='+img_name+'_pbcorr')
