@@ -127,7 +127,7 @@ for file in self_list:
                 mstransform(targets,outputvis=targets.replace('_targets.ms','_targets_mid.ms'),spw=str(spw_list),datacolumn='data',regridms=True,nchan=int(nchan),start=str(v0)+'km/s',width=str(channel_wv)+'km/s',restfreq='230.538GHz',mode='velocity',nspw=1,phasecenter=phase_c)
                 concat([targets.replace('_targets.ms','_targets_pre.ms'),targets.replace('_targets.ms','_targets_mid.ms'),targets.replace('_targets.ms','_targets_post.ms')],concatvis=targets.replace('_targets.ms','_targets_vel.ms'))
         msmda.done()
-    auto_selfcal(targets.replace('_targets.ms','_targets_vel.ms'), parallel=parallel,spectral_average=False,optimize_spw_combine=False,minsnr_to_proceed=2.0,gaincal_minsnr=2.0,allow_gain_interpolation=True,guess_scan_combine=True,allow_cocal=False,delta_beam_thresh=10,apply_to_target_ms=False,check_all_spws=False,apply_cal_mode_default='calflag',inf_EB_gaintype='T',inf_EB_gaincal_combine='scan',dividing_factor=50.0,do_amp_selfcal=False,sidelobethreshold=1.5,noisethreshold=5.0)
+    auto_selfcal(targets.replace('_targets.ms','_targets_vel.ms'), parallel=parallel,spectral_average=False,optimize_spw_combine=False,minsnr_to_proceed=2.0,gaincal_minsnr=2.0,allow_gain_interpolation=True,guess_scan_combine=True,allow_cocal=False,delta_beam_thresh=10,apply_to_target_ms=False,check_all_spws=False,apply_cal_mode_default='calflag',inf_EB_gaintype='T',inf_EB_gaincal_combine='scan',dividing_factor=50.0,do_amp_selfcal=False,sidelobethreshold=1.5,noisethreshold=7.0)
     os.system('rm -r *.tt0')
     os.system('rm -r *.mask')
     os.system('rm -r '+targets.replace('_targets.ms','_targets_pre.ms'))
@@ -138,7 +138,7 @@ for file in self_list:
 
 
 # Continuum subtraction
-"""
+
 uvc_list=[]
 for fname in os.listdir(): # change directory as needed
     if fname.endswith('.selfcal.ms') and fname.startswith('Target'):
@@ -147,7 +147,6 @@ for fname in os.listdir(): # change directory as needed
             uvcontsub(vis=fname,spw='',fitspec='0,2',fitorder=1,outputvis=fname.replace('.ms','_line.ms'),datacolumn='corrected') #CHECK SPW!!!
         except:
             uvcontsub(vis=fname,spw='',fitspec='0,2',fitorder=1,outputvis=fname.replace('.ms','_line.ms'),datacolumn='data')
-"""
 ##imaging
 img_list=[]
 for fname in os.listdir(): # change directory as needed

@@ -93,10 +93,10 @@ threshold.fluxRange        =  negative
 # Linker
 
 linker.enable              =  true
-linker.radiusXY            =  4
-linker.radiusZ             =  2
+linker.radiusXY            =  6 #4
+linker.radiusZ             =  4 #2
 linker.minSizeXY           =  6
-linker.minSizeZ            =  2
+linker.minSizeZ            =  4 #2
 linker.maxSizeXY           =  0
 linker.maxSizeZ            =  0
 linker.minPixels           =  0
@@ -130,7 +130,7 @@ filter.minPixels           =  0
 # Mask dilation
 
 dilation.enable            =  true
-dilation.iterationsXY      =  15
+dilation.iterationsXY      =  5 #15
 dilation.iterationsZ       =  5
 dilation.threshold         =  0.001
 
