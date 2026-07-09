@@ -1,6 +1,6 @@
 SCRIPTS AND TEMPLATE FILES USED IN ALMA JELLY PROCESSING:
 
-1) ma_script.py: auto-selfcal and Robust=0 imaging with Sofia
+A) ma_script.py: auto-selfcal and Robust=0 imaging with Sofia
 
 Save ma_script.py in auto_selfcal/bin
 
@@ -31,7 +31,8 @@ SCRIPT STEPS:
 
    use at your own risk.
 
-2) script_clean.py: Robust=2 imaging
+B) script_clean.py: Robust=2 imaging
    Save script in auto_selfcal/bin
    MUST be run after ma_script.py
-   
+
+C) final_image.py: generates "nice" plots from the R0 and R2 moments maps.
