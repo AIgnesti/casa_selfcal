@@ -1,3 +1,7 @@
+SCRIPTS AND TEMPLATE FILES USED IN ALMA JELLY PROCESSING:
+
+1) ma_script.py: auto-selfcal and Robust=0 imaging with Sofia
+
 Save ma_script.py in auto_selfcal/bin
 
 Then
@@ -10,7 +14,7 @@ casa -c [path to auto_selfcal]/auto_selfcal/bin/ma_script.py
 SCRIPT STEPS:
 1) Split observations in targets
 2) split targets in pre spw (25 channels)+main spw centered on central V + post spw (25 channels)
-3) auto_selfcal
+3) auto_selfcal [auto-multithresh masking parameters require fine tuning]
 4) uvcontsub: continuum is fitted in spw 0,2
 5) imaging spw 1 only (aka the line)
    1) dirty image
@@ -26,3 +30,8 @@ SCRIPT STEPS:
 9) Moment0,1 and 2 with SOFIA at 3.5 sigma w/o reliability
 
    use at your own risk.
+
+2) script_clean.py: Robust=2 imaging
+   Save script in auto_selfcal/bin
+   MUST be run after ma_script.py
+   
