@@ -89,6 +89,12 @@ self_list=[]
 for x in os.listdir():
     if x.startswith('weblog'):
         print(x)
+for x in os.listdir():
+    if x.startswith('weblog') and len(os.listdir(x))<4:
+        file=x.replace('weblog_','')
+        print(x,len(os.listdir(x)),file)
+        os.system('rm -rf Target*'+file+'*')
+        os.system('rm -rf '+x )
 
 
 for fname in os.listdir(): # change directory as needed
@@ -127,7 +133,7 @@ for file in self_list:
                 mstransform(targets,outputvis=targets.replace('_targets.ms','_targets_mid.ms'),spw=str(spw_list),datacolumn='data',regridms=True,nchan=int(nchan),start=str(v0)+'km/s',width=str(channel_wv)+'km/s',restfreq='230.538GHz',mode='velocity',nspw=1,phasecenter=phase_c)
                 concat([targets.replace('_targets.ms','_targets_pre.ms'),targets.replace('_targets.ms','_targets_mid.ms'),targets.replace('_targets.ms','_targets_post.ms')],concatvis=targets.replace('_targets.ms','_targets_vel.ms'))
         msmda.done()
-    auto_selfcal(targets.replace('_targets.ms','_targets_vel.ms'), parallel=parallel,spectral_average=False,optimize_spw_combine=False,minsnr_to_proceed=2.0,gaincal_minsnr=2.0,allow_gain_interpolation=True,guess_scan_combine=True,allow_cocal=False,delta_beam_thresh=10,apply_to_target_ms=False,check_all_spws=False,apply_cal_mode_default='calflag',inf_EB_gaintype='T',inf_EB_gaincal_combine='scan',dividing_factor=50.0,do_amp_selfcal=False,sidelobethreshold=1.5,noisethreshold=7.0)
+    auto_selfcal(targets.replace('_targets.ms','_targets_vel.ms'), parallel=parallel,spectral_average=False,optimize_spw_combine=False,minsnr_to_proceed=1.5,gaincal_minsnr=1.5,allow_gain_interpolation=True,guess_scan_combine=True,allow_cocal=False,delta_beam_thresh=10,apply_to_target_ms=False,check_all_spws=False,apply_cal_mode_default='calflag',inf_EB_gaintype='T',inf_EB_gaincal_combine='scan',dividing_factor=50.0,do_amp_selfcal=False,lownoisethreshold=3.5,sidelobethreshold=1.5, noisethreshold=5.0,cell='1.5arcsec')#,sidelobethreshold=1.5, noisethreshold=5.0, lownoisethreshold=1.5, negativethreshold=0.0,smoothfactor=1.)#,cell='1.5arcsec')#,sidelobethreshold=1.5,noisethreshold=1.5)
     os.system('rm -r *.tt0')
     os.system('rm -r *.mask')
     os.system('rm -r '+targets.replace('_targets.ms','_targets_pre.ms'))
@@ -137,8 +143,9 @@ for file in self_list:
     os.system('mv weblog weblog_'+file.replace('.ms',''))
 
 
-# Continuum subtraction
 
+
+# Continuum subtraction
 uvc_list=[]
 for fname in os.listdir(): # change directory as needed
     if fname.endswith('.selfcal.ms') and fname.startswith('Target'):
@@ -147,6 +154,9 @@ for fname in os.listdir(): # change directory as needed
             uvcontsub(vis=fname,spw='',fitspec='0,2',fitorder=1,outputvis=fname.replace('.ms','_line.ms'),datacolumn='corrected') #CHECK SPW!!!
         except:
             uvcontsub(vis=fname,spw='',fitspec='0,2',fitorder=1,outputvis=fname.replace('.ms','_line.ms'),datacolumn='data')
+
+
+
 ##imaging
 img_list=[]
 for fname in os.listdir(): # change directory as needed
@@ -158,8 +168,9 @@ print(img_list)
 
 
 ### Dirty image to compute goal noise
+if not img_name+'_dirty.psf' in os.listdir():
 
-tclean(vis=img_list,selectdata=True,field='',spw='1',timerange='',uvrange='',phasecenter=phase_c,antenna='',scan='',observation='',intent='',datacolumn='corrected',imagename=img_name+'_dirty',imsize=imsz,cell='0.15arcsec',stokes='I',projection='SIN',startmodel='',specmode='cube',reffreq='',outframe='',veltype='radio',restfreq='230.538GHz',interpolation='linear',perchanweightdensity=True,gridder='mosaic',facets=1,psfphasecenter='',wprojplanes=1,vptable='',mosweight=True,aterm=True,psterm=False,wbawp=True,conjbeams=False,cfcache='',usepointing=False,computepastep=360.0,rotatepastep=360.0,pointingoffsetsigdev=[],pblimit=0.2,normtype='flatnoise',deconvolver='multiscale',scales=[0, 6, 12],nterms=2,smallscalebias=0.0,fusedthreshold=0.0,largestscale=-1,restoration=True,restoringbeam='',pbcor=False,outlierfile='',weighting='briggs',robust=0.5,npixels=0,uvtaper=[],niter=0,gain=0.1,threshold='2.0mJy/beam',nsigma=0.0,cycleniter=100,cyclefactor=3.0,minpsffraction=0.05,maxpsffraction=0.8,interactive=False,nmajor=-1,fullsummary=False,usemask='auto-multithresh',mask='',pbmask=0.2,sidelobethreshold=2.0,noisethreshold=4.25,lownoisethreshold=1.5,negativethreshold=0.0,smoothfactor=1.0,minbeamfrac=0.3,cutthreshold=0.01,growiterations=75,dogrowprune=True,minpercentchange=-1.0,verbose=False,fastnoise=True,restart=True,savemodel='none',calcres=True,calcpsf=True,psfcutoff=0.35,parallel=True )
+    tclean(vis=img_list,selectdata=True,field='',spw='1',timerange='',uvrange='',phasecenter=phase_c,antenna='',scan='',observation='',intent='',datacolumn='corrected',imagename=img_name+'_dirty',imsize=imsz,cell='0.15arcsec',stokes='I',projection='SIN',startmodel='',specmode='cube',reffreq='',outframe='',veltype='radio',restfreq='230.538GHz',interpolation='linear',perchanweightdensity=True,gridder='mosaic',facets=1,psfphasecenter='',wprojplanes=1,vptable='',mosweight=True,aterm=True,psterm=False,wbawp=True,conjbeams=False,cfcache='',usepointing=False,computepastep=360.0,rotatepastep=360.0,pointingoffsetsigdev=[],pblimit=0.2,normtype='flatnoise',deconvolver='multiscale',scales=[0, 6, 12],nterms=2,smallscalebias=0.0,fusedthreshold=0.0,largestscale=-1,restoration=True,restoringbeam='',pbcor=False,outlierfile='',weighting='briggs',robust=0.5,npixels=0,uvtaper=[],niter=0,gain=0.1,threshold='2.0mJy/beam',nsigma=0.0,cycleniter=100,cyclefactor=3.0,minpsffraction=0.05,maxpsffraction=0.8,interactive=False,nmajor=-1,fullsummary=False,usemask='auto-multithresh',mask='',pbmask=0.2,sidelobethreshold=2.0,noisethreshold=4.25,lownoisethreshold=1.5,negativethreshold=0.0,smoothfactor=1.0,minbeamfrac=0.3,cutthreshold=0.01,growiterations=75,dogrowprune=True,minpercentchange=-1.0,verbose=False,fastnoise=True,restart=True,savemodel='none',calcres=True,calcpsf=True,psfcutoff=0.35,parallel=True )
 
 
 # Identify 7+12 channels
